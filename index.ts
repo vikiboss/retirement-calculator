@@ -1,43 +1,80 @@
-type RetirementCalcResult = {
+type RetirementInfo = {
   retirementAge: string
   retirementTime: string
   delayMonths: string
 }
 
-function calculateRetirementInfo(
-  birthYear: number,
-  birthMonth: number,
+function calculateRetirement(
+  yearOfBirth: number,
+  monthOfBirth: number,
   type: 'male' | 'female50' | 'female55',
-): RetirementCalcResult {
-  const addMonths = (year: number, month: number, addMonth: number) => {
-    const date = new Date(year, month - 1, 1)
-    date.setMonth(date.getMonth() + addMonth)
-    return `${date.getFullYear()}年${date.getMonth() + 1}月`
+): RetirementInfo {
+  const monthDiff = (fromYear: number, fromMonth: number, toYear: number, toMonth: number): number => {
+    return (toYear - fromYear) * 12 + toMonth - fromMonth
   }
 
-  const result: RetirementCalcResult = { retirementAge: '', retirementTime: '', delayMonths: '' }
+  const addMonths = (date: Date, months: number): Date => {
+    date.setMonth(date.getMonth() + months)
+    return date
+  }
+
+  let retirementAge = ''
+  let retirementTime = ''
+  let delayMonths = 0
 
   if (type === 'male') {
-    const baseYear = 1965
-    const baseYearPlus = birthYear - baseYear
-
-    if (birthYear < 1965) {
-      result.retirementAge = '60岁'
-      result.retirementTime = addMonths(birthYear, birthMonth, 720)
-      result.delayMonths = '0个月'
-    } else if (birthYear > 1976) {
-      result.retirementAge = '63岁'
-      result.retirementTime = addMonths(birthYear, birthMonth, 756)
-      result.delayMonths = '36个月'
+    if (yearOfBirth < 1965) {
+      retirementAge = '60岁'
+      delayMonths = 0
+    } else if (yearOfBirth > 1976) {
+      retirementAge = '63岁'
+      delayMonths = 36
     } else {
-      const delayMonths = Math.ceil((baseYearPlus * 12) / 4)
-      const retirementAgeYears = 60 + Math.floor(delayMonths / 12)
-      const retirementAgeMonths = delayMonths % 12
-      result.retirementAge = `${retirementAgeYears}岁${retirementAgeMonths > 0 ? `${retirementAgeMonths}个月` : ''}`
-      result.retirementTime = addMonths(birthYear, birthMonth, 720 + delayMonths)
-      result.delayMonths = `${delayMonths}个月`
+      const diff = Math.ceil(monthDiff(1965, 1, yearOfBirth, monthOfBirth) / 4)
+      const extraYears = Math.floor(diff / 12)
+      const extraMonths = diff % 12
+      retirementAge = `${60 + extraYears}岁${extraMonths > 0 ? `${extraMonths}个月` : ''}`
+      delayMonths = diff
+    }
+  } else if (type === 'female55') {
+    if (yearOfBirth < 1970) {
+      retirementAge = '55岁'
+      delayMonths = 0
+    } else if (yearOfBirth > 1981) {
+      retirementAge = '58岁'
+      delayMonths = 36
+    } else {
+      const diff = Math.ceil(monthDiff(1970, 1, yearOfBirth, monthOfBirth) / 4)
+      const extraYears = Math.floor(diff / 12)
+      const extraMonths = diff % 12
+      retirementAge = `${55 + extraYears}岁${extraMonths > 0 ? `${extraMonths}个月` : ''}`
+      delayMonths = diff
+    }
+  } else if (type === 'female50') {
+    if (yearOfBirth < 1975) {
+      retirementAge = '50岁'
+      delayMonths = 0
+    } else if (yearOfBirth > 1984) {
+      retirementAge = '55岁'
+      delayMonths = 60
+    } else {
+      const diff = Math.ceil(monthDiff(1975, 1, yearOfBirth, monthOfBirth) / 2)
+      const extraYears = Math.floor(diff / 12)
+      const extraMonths = diff % 12
+      retirementAge = `${50 + extraYears}岁${extraMonths > 0 ? `${extraMonths}个月` : ''}`
+      delayMonths = diff
     }
   }
 
-  return result
+  const retirementStartDate = addMonths(
+    new Date(yearOfBirth, monthOfBirth - 1),
+    (type === 'male' ? 60 : type === 'female55' ? 55 : 50) * 12 + delayMonths,
+  )
+  retirementTime = `${retirementStartDate.getFullYear()}年${retirementStartDate.getMonth() + 1}月`
+
+  return {
+    retirementAge,
+    retirementTime,
+    delayMonths: `${delayMonths}个月`,
+  }
 }
